@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta name="referrer" content="no-referrer-when-downgrade">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simon Says</title>
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+    }
+
+    #game-container {
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      width: 100%;
+      max-width: 500px;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    #simon-board {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-bottom: 30px;
+      width: 270px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .simon-button {
+      width: 120px;
+      height: 120px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      opacity: 0.8;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .simon-button:hover {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+
+    .simon-button.active {
+      transform: scale(1.1);
+      box-shadow: 0 0 30px 15px rgba(255, 255, 255, 0.7);
+    }
+
+    #red {
+      background-color: #ff4136;
+    }
+
+    #green {
+      background-color: #2ecc40;
+    }
+
+    #blue {
+      background-color: #0074d9;
+    }
+
+    #yellow {
+      background-color: #ffdc00;
+    }
+
+    #start-button {
+      font-size: 1.2em;
+      padding: 12px 30px;
+      cursor: pointer;
+      background-color: #01FF70;
+      color: #111111;
+      border: none;
+      border-radius: 25px;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #start-button:hover {
+      background-color: #2ECC40;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    #start-button:disabled {
+      background-color: #aaaaaa;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    #message {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+      font-weight: 300;
+      letter-spacing: 1px;
+    }
+
+    #leaderboard {
+      margin-top: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    #leaderboard h2 {
+      margin-top: 0;
+      font-size: 1.5em;
+    }
+
+    #leaderboard-list {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    #leaderboard-list li {
+      margin-bottom: 5px;
+      font-size: 1.1em;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="game-container">
+    <h1>Simon Says</h1>
+    <div id="message">Press Start to begin!</div>
+    <div id="simon-board">
+      <button id="red" class="simon-button"></button>
+      <button id="green" class="simon-button"></button>
+      <button id="blue" class="simon-button"></button>
+      <button id="yellow" class="simon-button"></button>
+    </div>
+    <button id="start-button">Start Game</button>
+    <div id="leaderboard">
+      <h2>Leaderboard</h2>
+      <ul id="leaderboard-list"></ul>
+    </div>
+  </div>
+  <script>
+    (function() {
+      let GG_ALL_GAME_CONFIG = {
+        colors: ['red', 'green', 'blue', 'yellow'], // Available colors
+        startDelay: 1000, // Delay before starting sequence in ms
+        sequenceDelay: 500, // Delay between each color in sequence in ms
+        flashDuration: 300, // Duration of color flash in ms
+        startRoundLength: 1, // Initial sequence length
+        maxRoundLength: 20 // Maximum sequence length
+      };
+      let gameSequence = [];
+      let playerSequence = [];
+      let round = 0;
+      let canPlay = false;
+      const buttons = document.querySelectorAll('.simon-button');
+      const startButton = document.getElementById('start-button');
+      const messageElement = document.getElementById('message');
+      const leaderboardList = document.getElementById('leaderboard-list');
+      startButton.addEventListener('click', startGame);
+      buttons.forEach(button => {
+        button.addEventListener('click', () => {
+          if (canPlay) {
+            playColor(button.id);
+            playerSequence.push(button.id);
+            checkPlayerInput();
+          }
+        });
+      });
+
+      function startGame() {
+        gameSequence = [];
+        playerSequence = [];
+        round = 0;
+        canPlay = false;
+        startButton.disabled = true;
+        nextRound();
+        requestLeaderboard();
+      }
+
+      function nextRound() {
+        round++;
+        playerSequence = [];
+        messageElement.textContent = `Round ${round}`;
+        addToSequence();
+        playSequence();
+      }
+
+      function addToSequence() {
+        const randomColor = GG_ALL_GAME_CONFIG.colors[Math.floor(Math.random() * GG_ALL_GAME_CONFIG.colors.length)];
+        gameSequence.push(randomColor);
+      }
+
+      function playSequence() {
+        canPlay = false;
+        let i = 0;
+        const interval = setInterval(() => {
+          playColor(gameSequence[i]);
+          i++;
+          if (i >= gameSequence.length) {
+            clearInterval(interval);
+            setTimeout(() => {
+              canPlay = true;
+              messageElement.textContent = 'Your turn!';
+            }, GG_ALL_GAME_CONFIG.sequenceDelay);
+          }
+        }, GG_ALL_GAME_CONFIG.sequenceDelay + GG_ALL_GAME_CONFIG.flashDuration);
+      }
+
+      function playColor(color) {
+        const button = document.getElementById(color);
+        button.classList.add('active');
+        button.style.opacity = '1';
+        setTimeout(() => {
+          button.classList.remove('active');
+          button.style.opacity = '0.7';
+        }, GG_ALL_GAME_CONFIG.flashDuration);
+        playSound(color);
+      }
+
+      function playSound(color) {
+        const audioContext = new(window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        switch (color) {
+          case 'red':
+            oscillator.frequency.setValueAtTime(261.6, audioContext.currentTime); // C4
+            break;
+          case 'green':
+            oscillator.frequency.setValueAtTime(329.6, audioContext.currentTime); // E4
+            break;
+          case 'blue':
+            oscillator.frequency.setValueAtTime(392.0, audioContext.currentTime); // G4
+            break;
+          case 'yellow':
+            oscillator.frequency.setValueAtTime(523.3, audioContext.currentTime); // C5
+            break;
+        }
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.01);
+        oscillator.start(audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
+        oscillator.stop(audioContext.currentTime + 0.5);
+      }
+
+      function checkPlayerInput() {
+        const currentIndex = playerSequence.length - 1;
+        if (playerSequence[currentIndex] !== gameSequence[currentIndex]) {
+          endGame();
+          return;
+        }
+        if (playerSequence.length === gameSequence.length) {
+          canPlay = false;
+          setTimeout(nextRound, GG_ALL_GAME_CONFIG.startDelay);
+        }
+      }
+
+      function endGame() {
+        messageElement.textContent = `Game Over! You reached round ${round}`;
+        startButton.disabled = false;
+        startButton.classList.add('pulse');
+        canPlay = false;
+        saveScore(round, `Round ${round}`);
+      }
+
+      function updateRoundDisplay() {
+        messageElement.textContent = `Round ${round}`;
+        messageElement.classList.add('pulse');
+        setTimeout(() => {
+          messageElement.classList.remove('pulse');
+        }, 1000);
+      }
+
+      function nextRound() {
+        round++;
+        playerSequence = [];
+        updateRoundDisplay();
+        addToSequence();
+        playSequence();
+      }
+
+      function saveScore(score, scoreText) {
+        const submitScoreEvent = {
+          type: 'REQUEST_SAVE_SCORE_EVENT',
+          score_numeric: score,
+          score_text: scoreText,
+        };
+        window.parent.postMessage(submitScoreEvent, '*');
+        requestLeaderboard();
+      }
+
+      function requestLeaderboard() {
+        window.parent.postMessage({
+          type: 'REQUEST_LOAD_SCORES_EVENT'
+        }, '*');
+      }
+      window.addEventListener('message', (event) => {
+        const {
+          type,
+          scores
+        } = event.data;
+        if (type === 'RESPONSE_LOAD_SCORES_EVENT') {
+          updateLeaderboard(scores);
+        }
+      });
+
+      function updateLeaderboard(scores) {
+        leaderboardList.innerHTML = '';
+        scores.slice(0, 10).forEach((score, index) => {
+          const li = document.createElement('li');
+          li.textContent = `${index + 1}. ${score.handle}: ${score.score_text}`;
+          leaderboardList.appendChild(li);
+        });
+      }
+      // Initial leaderboard load
+      requestLeaderboard();
+    })();
+  </script>
+
+</body>
+
+</html>
