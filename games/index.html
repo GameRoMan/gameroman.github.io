@@ -5,10 +5,7 @@
   <meta name="referrer" content="no-referrer-when-downgrade">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="google-site-verification" content="EMcqYVR9fCkgWQibtmobedVmhnLSupwZvMZDWLS5A9k" />
-  <meta name="yandex-verification" content="5ef961fb7e05074b" />
-  <link rel="icon" href="/favicon.ico">
-  <title>GameRoMan</title>
+  <title>Games by GameRoMan</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -26,6 +23,21 @@
       border: 1px solid #ccc;
       border-radius: 4px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    }
+
+    #toolbar {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    #toolbar a {
+      color: #333;
+      text-decoration: none;
+    }
+
+    #toolbar a:hover {
+      text-decoration: underline;
     }
 
     #urlList {
@@ -73,22 +85,37 @@
 
 <body>
   <div id="main-container">
+    <div id="toolbar"><a id="parentDirectory">Parent Directory</a></div>
     <ul id="urlList"></ul>
   </div>
   <script>
     (function() {
+      const parentDirectory = "/";
       const currentDirectory = window.location.href;
       const urls = [
         {
-          title: "Games",
-          id: `${currentDirectory}games`
+          title: "2048",
+          id: `${currentDirectory}2048`
         },
         {
-          title: "What Beats Rock",
-          id: `${currentDirectory}wbr`
+          title: "Simon Says",
+          id: `${currentDirectory}simon-says`
+        },
+        {
+          title: "Tetris",
+          id: `${currentDirectory}tetris`
+        },
+        {
+          title: "Water Sort Puzzle",
+          id: `${currentDirectory}water-sort-puzzle`
+        },
+        {
+          title: "Wordle",
+          id: `${currentDirectory}wordle`
         }
       ];
       const urlList = document.getElementById('urlList');
+      document.getElementById('parentDirectory').href = parentDirectory;
 
       function renderUrls() {
         urlList.innerHTML = '';

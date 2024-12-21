@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta name="referrer" content="no-referrer-when-downgrade">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Water Sort Puzzle</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: linear-gradient(to bottom, #87CEEB, #1E90FF);
+    }
+
+    #game-container {
+      text-align: center;
+    }
+
+    #tubes-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .tube {
+      width: 60px;
+      height: 200px;
+      background-color: rgba(255, 255, 255, 0.7);
+      border: 2px solid #000;
+      border-radius: 0 0 20px 20px;
+      margin: 0 10px;
+      display: flex;
+      flex-direction: column-reverse;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .liquid {
+      width: 100%;
+      height: 25%;
+      transition: all 0.3s ease;
+    }
+
+    #message {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: #fff;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    #reset {
+      font-size: 18px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #reset:hover,
+    #restart-level:hover {
+      background-color: #45a049;
+    }
+
+    #restart-level {
+      font-size: 18px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="game-container">
+    <h1>Water Sort Puzzle</h1>
+    <div id="message">Sort the liquids!</div>
+    <div id="tubes-container"></div>
+    <button id="restart-level">Restart Level</button>
+  </div>
+  <script>
+    (function() {
+      const GG_ALL_GAME_CONFIG = {
+        dataUrl: 'https://bypasser.gameroman.workers.dev/api/v1/gitlab.com/gameroman/water-sort-puzzle/-/raw/main/data',
+        finalMessage: 'Congratulations! You completed all levels!',
+        tubeCapacity: 4, // Maximum number of liquid units per tube
+        colors: ['#FF0000', '#0000FF', '#20D020', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#A200FF'], // Array of liquid colors
+        levels: [ // Array of predefined levels
+          [
+            [0, 0, 1, 1],
+            [1, 1, 0, 0],
+            []
+          ],
+          [
+            [0, 1, 0, 1],
+            [1, 0, 1, 0],
+            [],
+          ],
+          [
+            [1, 0, 0, 1],
+            [0, 0, 1, 1],
+            [],
+          ]
+        ],
+      };
+      const gameState = {
+        currentLevel: 0, // Current level index
+        tubes: [],
+        selectedTube: null,
+      };
+      async function loadData() {
+        await fetch(`${GG_ALL_GAME_CONFIG.dataUrl}/levels.json?timestamp=${Date.now()}`)
+          .then(response => response.json())
+          .then(data => {
+            GG_ALL_GAME_CONFIG.levels = data;
+          })
+        fetch(`${GG_ALL_GAME_CONFIG.dataUrl}/finalmessage.txt?timestamp=${Date.now()}`)
+          .then(response => response.text())
+          .then(data => {
+            GG_ALL_GAME_CONFIG.finalMessage = escapeHtml(data).replaceAll('\n', '<br>');
+          })
+      }
+
+      function escapeHtml(text) {
+        return text
+          .replaceAll(/&/g, "&amp;")
+          .replaceAll(/</g, "&lt;")
+          .replaceAll(/>/g, "&gt;")
+          .replaceAll(/"/g, "&quot;")
+          .replaceAll(/'/g, "&#039;");
+      }
+
+      function createTubes() {
+        const tubesContainer = document.getElementById('tubes-container');
+        tubesContainer.innerHTML = '';
+        gameState.tubes = JSON.parse(JSON.stringify(GG_ALL_GAME_CONFIG.levels[gameState.currentLevel]));
+        for (let i = 0; i < gameState.tubes.length; i++) {
+          const tube = document.createElement('div');
+          tube.className = 'tube';
+          tube.onclick = () => selectTube(i);
+          tubesContainer.appendChild(tube);
+        }
+      }
+
+      function loadLevel() {
+        document.getElementById('restart-level').style.visibility = 'hidden';
+        if (gameState.currentLevel >= GG_ALL_GAME_CONFIG.levels.length) {
+          document.getElementById('tubes-container').style.visibility = 'hidden';
+          document.getElementById('message').innerHTML = GG_ALL_GAME_CONFIG.finalMessage;
+          return;
+        }
+        createTubes();
+        renderTubes();
+        document.getElementById('message').textContent = `Level ${gameState.currentLevel + 1}`;
+      }
+
+      function renderTubes() {
+        gameState.tubes.forEach((tube, index) => {
+          const tubeElement = document.getElementsByClassName('tube')[index];
+          tubeElement.innerHTML = '';
+          tube.forEach(colorIndex => {
+            const liquid = document.createElement('div');
+            liquid.className = 'liquid';
+            liquid.style.backgroundColor = GG_ALL_GAME_CONFIG.colors[colorIndex];
+            tubeElement.appendChild(liquid);
+          });
+        });
+      }
+
+      function selectTube(index) {
+        if (gameState.selectedTube === null) {
+          if (gameState.tubes[index].length > 0) {
+            gameState.selectedTube = index;
+            document.getElementsByClassName('tube')[index].style.border = '2px solid #FFD700';
+          }
+        } else {
+          if (canPour(gameState.selectedTube, index)) {
+            pourLiquid(gameState.selectedTube, index);
+            checkWin();
+          }
+          document.getElementsByClassName('tube')[gameState.selectedTube].style.border = '2px solid #000';
+          gameState.selectedTube = null;
+        }
+      }
+
+      function canPour(from, to) {
+        if (from === to) return false;
+        if (gameState.tubes[from].length === 0) return false;
+        if (gameState.tubes[to].length === GG_ALL_GAME_CONFIG.tubeCapacity) return false;
+        if (gameState.tubes[to].length === 0) return true;
+        return gameState.tubes[from][gameState.tubes[from].length - 1] === gameState.tubes[to][gameState.tubes[to].length - 1];
+      }
+
+      function pourLiquid(from, to) {
+        const colorToPour = gameState.tubes[from][gameState.tubes[from].length - 1];
+        while (gameState.tubes[from].length > 0 && gameState.tubes[to].length < GG_ALL_GAME_CONFIG.tubeCapacity && gameState.tubes[from][gameState.tubes[from].length - 1] === colorToPour) {
+          gameState.tubes[to].push(gameState.tubes[from].pop());
+        }
+        document.getElementById('restart-level').style.visibility = 'visible';
+        renderTubes();
+      }
+
+      function checkWin() {
+        const win = gameState.tubes.every((tube) => ((tube.length === 0) || ((tube.length === GG_ALL_GAME_CONFIG.tubeCapacity) && tube.every((color) => (color === tube[0])))));
+        if (win) {
+          nextLevel();
+        }
+      }
+
+      function newGame() {
+        const saveData = window.localStorage.getItem('UyEErEHEVJPl');
+        if (saveData) {
+          gameState.currentLevel = JSON.parse(saveData).currentLevel;
+        } else {
+          gameState.currentLevel = 0;
+        }
+        loadLevel();
+      }
+
+      function nextLevel() {
+        gameState.currentLevel++;
+        window.localStorage.setItem('UyEErEHEVJPl', JSON.stringify({
+          currentLevel: gameState.currentLevel
+        }));
+        loadLevel();
+      }
+
+      function restartLevel() {
+        loadLevel();
+      }
+      //
+      document.getElementById('restart-level').addEventListener('click', restartLevel);
+      // Initialize the game
+      loadData()
+        .then(() => {
+          newGame();
+        })
+    })();
+  </script>
+
+</body>
+
+</html>
