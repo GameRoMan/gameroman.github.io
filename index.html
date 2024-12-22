@@ -2,108 +2,105 @@
 <html lang="en">
 
 <head>
-  <meta name="referrer" content="no-referrer-when-downgrade">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="google-site-verification" content="guAB-Hi13HP_tOlPGDdYZtUD2828vFxUUMUOKVF0Wl0" />
-  <meta name="yandex-verification" content="5d560e7a48287174" />
-  <link rel="icon" href="/favicon.ico">
-  <title>GameRoMan</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f0f0f0;
-    }
+	<meta name="referrer" content="no-referrer-when-downgrade">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="google-site-verification" content="guAB-Hi13HP_tOlPGDdYZtUD2828vFxUUMUOKVF0Wl0" />
+	<meta name="yandex-verification" content="5d560e7a48287174" />
+	<link rel="icon" href="/favicon.ico">
+	<title>GameRoMan</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			margin: 0;
+			padding: 0;
+			background-color: #f0f0f0;
+		}
 
-    #main-container {
-      width: fit-content;
-      min-width: 300px;
-      max-width: 800px;
-      margin: 20px;
-      background-color: #fff;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-    }
+		#main-container {
+			width: fit-content;
+			min-width: 300px;
+			max-width: 800px;
+			margin: 20px;
+			background-color: #fff;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+		}
 
-    #urlList {
-      list-style-type: none;
-      padding: 0;
-      margin: 0;
-    }
+		#urlList {
+			list-style-type: none;
+			padding: 0;
+			margin: 0;
+		}
 
-    #urlList li {
-      padding: 10px 15px;
-      border-bottom: 1px solid #e0e0e0;
-      display: flex;
-      align-items: center;
-    }
+		#urlList li {
+			padding: 10px 15px;
+			border-bottom: 1px solid #e0e0e0;
+			display: flex;
+			align-items: center;
+		}
 
-    #urlList li:last-child {
-      border-bottom: none;
-    }
+		#urlList li:last-child {
+			border-bottom: none;
+		}
 
-    #urlList li:hover {
-      background-color: #f5f5f5;
-    }
+		#urlList li:hover {
+			background-color: #f5f5f5;
+		}
 
-    #urlList li a {
-      color: #333;
-      text-decoration: none;
-      flex-grow: 1;
-    }
+		#urlList li a {
+			color: #333;
+			text-decoration: none;
+			flex-grow: 1;
+		}
 
-    #urlList li a:hover {
-      text-decoration: underline;
-    }
+		#urlList li a:hover {
+			text-decoration: underline;
+		}
 
-    .icon {
-      width: 20px;
-      height: 20px;
-      margin-right: 10px;
-      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23757575"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>');
-      background-repeat: no-repeat;
-      background-position: center;
-      background-size: contain;
-    }
-  </style>
+		.icon {
+			width: 20px;
+			height: 20px;
+			margin-right: 10px;
+			background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23757575"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>');
+			background-repeat: no-repeat;
+			background-position: center;
+			background-size: contain;
+		}
+	</style>
 </head>
 
 <body>
-  <div id="main-container">
-    <ul id="urlList"></ul>
-  </div>
-  <script>
-    (function() {
-      const currentDirectory = window.location.href;
-      const urls = [
-        {
-          title: "Games",
-          id: `${currentDirectory}games`
-        },
-        {
-          title: "What Beats Rock",
-          id: `${currentDirectory}wbr`
-        }
-      ];
-      const urlList = document.getElementById('urlList');
+	<div id="main-container">
+		<ul id="urlList"></ul>
+	</div>
+	<script>
+		(function() {
+			const urls = [
+				{
+					title: 'Games',
+					id: 'games'
+				}
+			];
+			
+			const urlList = document.getElementById('urlList');
 
-      function renderUrls() {
-        urlList.innerHTML = '';
-        urls.forEach((url, index) => {
-          const li = document.createElement('li');
-          li.innerHTML = `
+			function renderUrls() {
+				urlList.innerHTML = '';
+				urls.forEach((url, index) => {
+					const li = document.createElement('li');
+					li.innerHTML = `
 <div class="icon"></div>
 <a href="${url.id}">${url.title}</a>
 `;
-          urlList.appendChild(li);
-        });
-      }
-      renderUrls();
-    })();
-  </script>
+					urlList.appendChild(li);
+				});
+			}
+			
+			renderUrls();
+		})();
+	</script>
 
 </body>
 
