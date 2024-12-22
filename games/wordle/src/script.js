@@ -1,8 +1,8 @@
 const GG_ALL_GAME_CONFIG = {
     maxGuesses: 6, // Maximum number of guesses allowed
     wordLength: 5, // Length of the word to guess
-    guessesListUrl: 'https://gameroman.pages.dev/games/wordle/data/guesses.txt',
-    answersListUrl: 'https://gameroman.pages.dev/games/wordle/data/answers.txt',
+    guessesListUrl: 'https://gameroman.github.io/games/wordle/data/guesses.txt',
+    answersListUrl: 'https://gameroman.github.io/games/wordle/data/answers.txt',
     webhookPlayUrl: 'https://webhooks.gameroman.workers.dev/send/wordle/play',
     webhookResultUrl: 'https://webhooks.gameroman.workers.dev/send/wordle/result',
     keyboardLayouts: {
@@ -38,7 +38,8 @@ let gameState = {
         currentStreak: 0,
         maxStreak: 0,
         guessDistribution: [0, 0, 0, 0, 0, 0]
-    }
+    },
+    keyColors: {}, // Store key colors
 };
 
 function initializeGame(gameMode = 'unlimited') {
@@ -47,6 +48,7 @@ function initializeGame(gameMode = 'unlimited') {
     gameState.currentRow = 0;
     gameState.currentTile = 0;
     gameState.guesses = [];
+    gameState.keyColors = {}; // Reset key colors for new game
     if (gameMode === 'daily') {
         gameState.secretWord = 'daily'; // Placeholder
     } else if (gameMode === 'unlimited') {
@@ -74,7 +76,8 @@ function createGameBoard() {
 function submitGuess() {
     const guess = gameState.guesses[gameState.currentRow].toLowerCase();
     if (!GG_ALL_GAME_CONFIG.guesses.includes(guess)) {
-        alert(`Word ${guess.toUpperCase()} does not exist`);
+        shakeRow();
+        showNotification(`Word ${guess.toUpperCase()} does not exist`);
         return;
     }
     colorTiles();
@@ -85,12 +88,48 @@ function submitGuess() {
         if (gameState.currentRow === GG_ALL_GAME_CONFIG.maxGuesses - 1) {
             finishGame(false);
             sendDiscordMessage('no');
-            alert(`Game over! The word was ${gameState.secretWord.toUpperCase()}`);
+            showNotification(`Game over! The word was ${gameState.secretWord.toUpperCase()}`);
         } else {
             gameState.currentRow++;
             gameState.currentTile = 0;
         }
     }
+}
+
+function shakeRow() {
+    const tiles = document.querySelectorAll('.tile');
+    const rowTiles = [...tiles].slice(gameState.currentRow * GG_ALL_GAME_CONFIG.wordLength, (gameState.currentRow + 1) * GG_ALL_GAME_CONFIG.wordLength);
+    rowTiles.forEach((tile) => {
+        tile.classList.add('shake');
+        setTimeout(() => {
+            tile.classList.remove('shake');
+        }, 500);
+    });
+}
+
+let notificationTimeout;
+function showNotification(message) {
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+        const existingNotification = document.querySelector('.notification');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+    }
+    const notification = document.createElement('div');
+    notification.textContent = message;
+    notification.classList.add('notification');
+    document.body.appendChild(notification);
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+    notificationTimeout = setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            notification.remove();
+            notificationTimeout = null;
+        }, 300);
+    }, 2000);
 }
 
 function finishGame(won) {
@@ -106,48 +145,65 @@ function colorTiles() {
     const tiles = document.querySelectorAll('.tile');
     const guess = gameState.guesses[gameState.currentRow].toLowerCase();
     const rowTiles = [...tiles].slice(gameState.currentRow * GG_ALL_GAME_CONFIG.wordLength, (gameState.currentRow + 1) * GG_ALL_GAME_CONFIG.wordLength);
-    
-    const letterCounts = [...gameState.secretWord].reduce((res, char) => (res[char] = (res[char] || 0) + 1, res), {});
-    
+
+    const letterCounts = [...gameState.secretWord].reduce((res, char) => ((res[char] = (res[char] || 0) + 1), res), {});
+
     rowTiles.forEach((tile, index) => {
         const letter = guess[index];
         const correctLetter = gameState.secretWord[index];
-        
-        if (letter === correctLetter) {
-            tile.classList.add('correct');
-            letterCounts[letter]--;
-        } else if (letterCounts[letter] > 0) {
-            tile.classList.add('present');
-            letterCounts[letter]--;
-        } else {
-            tile.classList.add('absent');
-        }
+
+        setTimeout(() => {
+            tile.classList.add('flip');
+            setTimeout(() => {
+                if (letter === correctLetter) {
+                    tile.classList.add('correct');
+                    letterCounts[letter]--;
+                } else if (letterCounts[letter] > 0) {
+                    tile.classList.add('present');
+                    letterCounts[letter]--;
+                } else {
+                    tile.classList.add('absent');
+                }
+                setTimeout(() => {
+                    tile.classList.remove('flip');
+                }, 250);
+            }, 250);
+        }, index * 250);
     });
-    
-    rowTiles.forEach((tile, index) => {
-        const letter = guess[index];
-        const correctLetter = gameState.secretWord[index];
-        
-        if ((letter !== correctLetter) && (letterCounts[letter] < 0)) {
-            tile.classList.remove('present');
-            tile.classList.add('absent');
-        }
-    });
-    
-    const keys = document.querySelectorAll('.key');
-    guess.split('').forEach((letter, index) => {
-        const keyElement = [...keys].find(key => key.textContent === letter.toUpperCase());
-        if (letter === gameState.secretWord[index]) {
-            keyElement.classList.add('correct');
-            keyElement.classList.remove('present');
-        } else if (gameState.secretWord.includes(letter)) {
-            if (!keyElement.classList.contains('correct')) {
-                keyElement.classList.add('present');
+
+    setTimeout(() => {
+        rowTiles.forEach((tile, index) => {
+            const letter = guess[index];
+            const correctLetter = gameState.secretWord[index];
+
+            if (letter !== correctLetter && letterCounts[letter] < 0) {
+                tile.classList.remove('present');
+                tile.classList.add('absent');
             }
-        } else {
-            keyElement.classList.add('absent');
-        }
-    });
+        });
+
+        const keys = document.querySelectorAll('.key');
+        guess.split('').forEach((letter, index) => {
+            const keyElement = [...keys].find((key) => key.textContent.toLowerCase() === letter.toLowerCase());
+            if (letter === gameState.secretWord[index]) {
+                keyElement.classList.add('correct');
+                keyElement.classList.remove('present');
+                gameState.keyColors[letter] = 'correct';
+            } else if (gameState.secretWord.includes(letter)) {
+                if (!keyElement.classList.contains('correct')) {
+                    keyElement.classList.add('present');
+                    if (gameState.keyColors[letter] !== 'correct') {
+                        gameState.keyColors[letter] = 'present';
+                    }
+                }
+            } else {
+                keyElement.classList.add('absent');
+                if (!gameState.keyColors[letter]) {
+                    gameState.keyColors[letter] = 'absent';
+                }
+            }
+        });
+    }, GG_ALL_GAME_CONFIG.wordLength * 250 + 100);
 }
 
 async function fetchWords() {
@@ -156,21 +212,21 @@ async function fetchWords() {
         const responseAnswers = await fetch(GG_ALL_GAME_CONFIG.answersListUrl);
         
         if (!responseGuesses.ok) {
-            throw new Error("Network response for Guesses was not ok");
+            throw new Error('Network response for Guesses was not ok');
         }
         if (!responseAnswers.ok) {
-            throw new Error("Network response for Answers was not ok");
+            throw new Error('Network response for Answers was not ok');
         }
         
         const guesses = await responseGuesses.text();
         const answers = await responseAnswers.text();
         
-        GG_ALL_GAME_CONFIG.guesses = guesses.split("\n").map(word => word.trim());
-        GG_ALL_GAME_CONFIG.answers = answers.split("\n").map(word => word.trim());
+        GG_ALL_GAME_CONFIG.guesses = guesses.split('\n').map(word => word.trim());
+        GG_ALL_GAME_CONFIG.answers = answers.split('\n').map(word => word.trim());
         
         GG_ALL_GAME_CONFIG.guesses = GG_ALL_GAME_CONFIG.guesses.concat(GG_ALL_GAME_CONFIG.answers);
     } catch (error) {
-        console.error("Error fetching words:", error);
+        console.error('Error fetching words:', error);
     }
     
     initializeGame();
@@ -183,11 +239,11 @@ function getWebhookUrl(id) {
 function getMessage(id) {    
     switch (id) {
         case 'play':
-            return `🎮 \`User from gameroman.pages.dev\` started playing [\`Wordle\`](<https://gameroman.pages.dev/games/wordle>)`;
+            return `🎮 \`User from gameroman.github.io\` started playing [\`Wordle\`](<https://gameroman.github.io/games/wordle>)`;
         case 'yes':
-            return `✅ \`User from gameroman.pages.dev\` guessed the word \`${gameState.secretWord.toUpperCase()}\` in \`${gameState.currentRow} attempts\``;
+            return `✅ \`User from gameroman.github.io\` guessed the word \`${gameState.secretWord.toUpperCase()}\` in \`${gameState.currentRow} attempts\``;
         case 'no':
-            return `❌ \`User from gameroman.pages.dev\ did not guess the word \`${gameState.secretWord.toUpperCase()}\``;
+            return `❌ \`User from gameroman.github.io\` did not guess the word \`${gameState.secretWord.toUpperCase()}\``;
         default:
             return 'Unknown';
     }
@@ -280,27 +336,37 @@ function createKeyboard() {
     addKeyToKeybaord('⌫', 'Delete', 2, 1);
     if (gameState.settings.submitButtonType === 'SUBMIT') {
         addKeyToKeybaord('SUBMIT', 'Submit', 10, 1);
+    }	
+    // Apply stored key colors
+    for (let key in gameState.keyColors) {
+        const keyElement = [...keyboard.children].find((el) => el.textContent.toLowerCase() === key.toLowerCase());
+        if (keyElement) {
+            keyElement.className = 'key ' + gameState.keyColors[key];
+        }
     }
 }
 
 function handleKeyPress(key) {
     if (gameState.gameOver) return;
-    if (key === 'Enter') {
+    if (key === 'Enter' || key === 'Submit') {
         if (gameState.currentTile === GG_ALL_GAME_CONFIG.wordLength) {
             submitGuess();
         }
-    } else if (key === 'Delete' || key === 'Submit') {
+    } else if (key === 'Delete') {
         if (gameState.currentTile > 0) {
             gameState.currentTile--;
             const tiles = document.querySelectorAll('.tile');
             const currentTile = tiles[gameState.currentRow * GG_ALL_GAME_CONFIG.wordLength + gameState.currentTile];
             currentTile.textContent = '';
+            currentTile.classList.remove('pop');
             gameState.guesses[gameState.currentRow] = gameState.guesses[gameState.currentRow].slice(0, -1);
         }
     } else if (gameState.currentTile < GG_ALL_GAME_CONFIG.wordLength) {
         const tiles = document.querySelectorAll('.tile');
         const currentTile = tiles[gameState.currentRow * GG_ALL_GAME_CONFIG.wordLength + gameState.currentTile];
         currentTile.textContent = key;
+        currentTile.classList.add('pop');
+        setTimeout(() => currentTile.classList.remove('pop'), 150);
         gameState.guesses[gameState.currentRow] = (gameState.guesses[gameState.currentRow] || '') + key;
         gameState.currentTile++;
     }
