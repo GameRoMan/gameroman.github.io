@@ -241,7 +241,7 @@ function getMessage(id) {
         case 'play':
             return `🎮 \`User from gameroman.github.io\` started playing [\`Wordle\`](<https://gameroman.github.io/games/wordle>)`;
         case 'yes':
-            return `✅ \`User from gameroman.github.io\` guessed the word \`${gameState.secretWord.toUpperCase()}\` in \`${gameState.currentRow} attempts\``;
+            return `✅ \`User from gameroman.github.io\` guessed the word \`${gameState.secretWord.toUpperCase()}\` in \`${gameState.currentRow + 1} attempts\``;
         case 'no':
             return `❌ \`User from gameroman.github.io\` did not guess the word \`${gameState.secretWord.toUpperCase()}\``;
         default:
