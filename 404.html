@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redirecting...</title>
     <script>
-        var newDomain = "https://roman.is-a.dev";
-        var path = window.location.pathname + window.location.search + window.location.hash;
-        window.location.replace(newDomain + path);
+        const newDomain = "https://rman.dev";
+        const path = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        window.location.replace(`${newDomain}${path}`);
     </script>
 </head>
 <body>
     <p>Redirecting... If nothing happens, <a id="redirectLink" href="#">click here</a>.</p>
     <script>
-        document.getElementById("redirectLink").href = newDomain + path;
+        document.getElementById("redirectLink").href = `${newDomain}${path}`;
     </script>
 </body>
 </html>
